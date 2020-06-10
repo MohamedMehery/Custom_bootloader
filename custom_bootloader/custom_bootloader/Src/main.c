@@ -108,6 +108,7 @@ int main(void)
 		while(HAL_GetTick() <= (current_tick_value + 500));
 		
     /* USER CODE END WHILE */
+
     /* USER CODE BEGIN 3 */
 		
 		
