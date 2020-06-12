@@ -33,7 +33,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define FLASH_SECTOR2_BASE_ADDRESS 0x08000800
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -42,7 +42,6 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
@@ -52,9 +51,11 @@ UART_HandleTypeDef huart2;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-static void MX_USART1_UART_Init(void);
 static void MX_USART2_UART_Init(void);
 /* USER CODE BEGIN PFP */
+
+void go_to_bootloader();
+void go_to_user_app();
 
 /* USER CODE END PFP */
 
@@ -92,7 +93,6 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_USART1_UART_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
 
@@ -103,9 +103,16 @@ int main(void)
   while (1)
   {
 		
-		HAL_UART_Transmit(&huart1,(uint8_t * ) "hello\n" , 6, HAL_MAX_DELAY);
-		uint32_t current_tick_value = HAL_GetTick();
-		while(HAL_GetTick() <= (current_tick_value + 500));
+		HAL_UART_Transmit(&huart2,(uint8_t * ) "start bootloader\n" , 6, HAL_MAX_DELAY);
+		
+		if( HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_0) == GPIO_PIN_RESET )
+		{
+			go_to_bootloader();
+		}
+		else
+		{
+			go_to_user_app();
+		}
 		
     /* USER CODE END WHILE */
 
@@ -154,39 +161,6 @@ void SystemClock_Config(void)
 }
 
 /**
-  * @brief USART1 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_USART1_UART_Init(void)
-{
-
-  /* USER CODE BEGIN USART1_Init 0 */
-
-  /* USER CODE END USART1_Init 0 */
-
-  /* USER CODE BEGIN USART1_Init 1 */
-
-  /* USER CODE END USART1_Init 1 */
-  huart1.Instance = USART1;
-  huart1.Init.BaudRate = 115200;
-  huart1.Init.WordLength = UART_WORDLENGTH_8B;
-  huart1.Init.StopBits = UART_STOPBITS_1;
-  huart1.Init.Parity = UART_PARITY_NONE;
-  huart1.Init.Mode = UART_MODE_TX_RX;
-  huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-  huart1.Init.OverSampling = UART_OVERSAMPLING_16;
-  if (HAL_UART_Init(&huart1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN USART1_Init 2 */
-
-  /* USER CODE END USART1_Init 2 */
-
-}
-
-/**
   * @brief USART2 Initialization Function
   * @param None
   * @retval None
@@ -226,14 +200,54 @@ static void MX_USART2_UART_Init(void)
   */
 static void MX_GPIO_Init(void)
 {
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOD_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
 
+  /*Configure GPIO pin : PA0 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PA9 */
+  GPIO_InitStruct.Pin = GPIO_PIN_9;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PA10 */
+  GPIO_InitStruct.Pin = GPIO_PIN_10;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
 }
 
 /* USER CODE BEGIN 4 */
+void go_to_bootloader()
+{
+	/* do somethig */
+	HAL_UART_Transmit(&huart2 , (uint8_t *)"Inside bootloader code\r\n" , 24 , HAL_MAX_DELAY);
+	
+}
+
+void go_to_user_app()
+{
+	void ( * user_app_code ) (void);//to hold the address of the reset handler of the user app
+	HAL_UART_Transmit(&huart2 , (uint8_t *)"Go to user app\r\n" , 16 , HAL_MAX_DELAY);
+	/* now get the value of main stack pointer from new address */
+	uint32_t msp_value = *(volatile uint32_t *) FLASH_SECTOR2_BASE_ADDRESS;
+	__set_MSP(msp_value); /* set main stack pointer */
+	uint32_t Reset_handler = *(volatile uint32_t * ) (FLASH_SECTOR2_BASE_ADDRESS + 4);
+	user_app_code = (void *) (Reset_handler) ;
+	while(1)
+	{
+		user_app_code(); /* call user app */ ;
+	}
+}
 
 /* USER CODE END 4 */
 
