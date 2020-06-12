@@ -18,7 +18,7 @@ Hex Converter:   FromElf.exe V5.06 update 6 (build 750)
 CPU DLL:         SARMCM3.DLL V5.29.0.0
 Dialog DLL:      DCM.DLL V1.17.3.0
 Target DLL:      STLink\ST-LINKIII-KEIL_SWO.dll V3.0.7.0
-Dialog DLL:      TCM.DLL V1.36.5.0
+Dialog DLL:      TARMSTM.DLL V1.66.0.0
  
 <h2>Project:</h2>
 C:\Users\Mohamed Mehery\Documents\GitHub\Custom_bootloader\custom_bootloader\custom_bootloader\MDK-ARM\custom_bootloader.uvprojx
@@ -32,8 +32,8 @@ compiling main.c...
   void go_to_bootloader();
 ../Src/main.c(58): warning:  #1295-D: Deprecated declaration go_to_user_app - give arg types
   void go_to_user_app();
-../Src/main.c(245): warning:  #513-D: a value of type "void *" cannot be assigned to an entity of type "void (*)(void)"
-  	user_app_code = (void *) (Reset_handler) ;
+../Src/main.c(242): warning:  #513-D: a value of type "void *" cannot be assigned to an entity of type "void (*)(void)"
+  	user_app_code = (void *) (0x08001004) ;	
 ../Src/main.c: 3 warnings, 0 errors
 linking...
 Program Size: Code=3652 RO-data=292 RW-data=16 ZI-data=1088  
@@ -61,7 +61,7 @@ Package Vendor: Keil
 <h2>Collection of Component Files used:</h2>
 
    * Component: ARM::CMSIS:CORE:5.4.0
-Build Time Elapsed:  00:00:02
+Build Time Elapsed:  00:00:03
 </pre>
 </body>
 </html>
