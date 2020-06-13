@@ -212,18 +212,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : PA9 */
-  GPIO_InitStruct.Pin = GPIO_PIN_9;
-  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : PA10 */
-  GPIO_InitStruct.Pin = GPIO_PIN_10;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
 }
 
 /* USER CODE BEGIN 4 */
@@ -239,9 +227,9 @@ void go_to_user_app()
 	void ( * user_app_code ) (void);//to hold the address of the reset handler of the user app
 	HAL_UART_Transmit(&huart2 , (uint8_t *)"Go to user app\r\n" , 16 , HAL_MAX_DELAY);
 	uint32_t reset_handler_value = *(volatile uint32_t * ) (FLASH_SECTOR2_BASE_ADDRESS + 4);
-	user_app_code = (void *) (0x08001004) ;	
+	user_app_code = (void *) (reset_handler_value) ;
 	/* now get the value of main stack pointer from new address */
-	uint32_t msp_value = *(volatile uint32_t *) reset_handler_value;
+	uint32_t msp_value = *(volatile uint32_t *) FLASH_SECTOR2_BASE_ADDRESS;
 	__set_MSP(msp_value); /* set main stack pointer */
 
 	while(1)
