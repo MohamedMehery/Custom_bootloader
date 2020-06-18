@@ -226,11 +226,13 @@ void go_to_user_app()
 {
 	void ( * user_app_code ) (void);//to hold the address of the reset handler of the user app
 	HAL_UART_Transmit(&huart2 , (uint8_t *)"Go to user app\r\n" , 16 , HAL_MAX_DELAY);
-	uint32_t reset_handler_value = *(volatile uint32_t * ) (FLASH_SECTOR2_BASE_ADDRESS + 4);
-	user_app_code = (void *) (reset_handler_value) ;
 	/* now get the value of main stack pointer from new address */
 	uint32_t msp_value = *(volatile uint32_t *) FLASH_SECTOR2_BASE_ADDRESS;
 	__set_MSP(msp_value); /* set main stack pointer */
+	
+	uint32_t reset_handler_value = *(volatile uint32_t * ) (FLASH_SECTOR2_BASE_ADDRESS + 4);
+	user_app_code = (void *) (reset_handler_value) ;
+
 
 	while(1)
 	{
