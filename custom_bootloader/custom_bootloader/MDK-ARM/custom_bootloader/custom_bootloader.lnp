@@ -4,6 +4,7 @@
 "custom_bootloader\stm32f1xx_it.o"
 "custom_bootloader\stm32f1xx_hal_msp.o"
 "custom_bootloader\stm32f1xx_hal_gpio_ex.o"
+"custom_bootloader\stm32f1xx_hal_crc.o"
 "custom_bootloader\stm32f1xx_hal_tim.o"
 "custom_bootloader\stm32f1xx_hal_tim_ex.o"
 "custom_bootloader\stm32f1xx_hal_uart.o"
