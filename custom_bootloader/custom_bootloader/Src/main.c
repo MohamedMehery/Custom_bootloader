@@ -41,9 +41,11 @@
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
 #define C_UART &huart2	//command uart
+#define D_UART &huart3	//Depug uart
+#define BL_DEBUG_MSG_EN //enable Depug port
+
 #define BL_RX_LEN 200
 uint8_t BL_RX_BUFFER[BL_RX_LEN]; //to store all the command bytes sent by the bootloader
-/* USER CODE BEGIN PV */
 
 /* USER CODE END PM */
 
@@ -51,6 +53,13 @@ uint8_t BL_RX_BUFFER[BL_RX_LEN]; //to store all the command bytes sent by the bo
 CRC_HandleTypeDef hcrc;
 
 UART_HandleTypeDef huart2;
+UART_HandleTypeDef huart3;
+
+/* USER CODE BEGIN PV */
+
+/* USER CODE END PM */
+
+
 
 /* USER CODE BEGIN PV */
 uint8_t supported_commands[8] = {
@@ -75,6 +84,7 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_CRC_Init(void);
+static void MX_USART3_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
 void go_to_bootloader();
@@ -118,6 +128,7 @@ int main(void)
   MX_GPIO_Init();
   MX_USART2_UART_Init();
   MX_CRC_Init();
+  MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */
@@ -127,7 +138,7 @@ int main(void)
   while (1)
   {
 		
-		HAL_UART_Transmit(&huart2,(uint8_t * ) "start bootloader\n" , 6, HAL_MAX_DELAY);
+		HAL_UART_Transmit(D_UART,(uint8_t * ) "start bootloader\n" , 16, HAL_MAX_DELAY);
 		
 		if( HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_0) == GPIO_PIN_RESET )
 		{
@@ -244,6 +255,39 @@ static void MX_USART2_UART_Init(void)
 }
 
 /**
+  * @brief USART3 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART3_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART3_Init 0 */
+
+  /* USER CODE END USART3_Init 0 */
+
+  /* USER CODE BEGIN USART3_Init 1 */
+
+  /* USER CODE END USART3_Init 1 */
+  huart3.Instance = USART3;
+  huart3.Init.BaudRate = 115200;
+  huart3.Init.WordLength = UART_WORDLENGTH_8B;
+  huart3.Init.StopBits = UART_STOPBITS_1;
+  huart3.Init.Parity = UART_PARITY_NONE;
+  huart3.Init.Mode = UART_MODE_TX_RX;
+  huart3.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart3.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART3_Init 2 */
+
+  /* USER CODE END USART3_Init 2 */
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -255,6 +299,7 @@ static void MX_GPIO_Init(void)
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOD_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin : PA0 */
   GPIO_InitStruct.Pin = GPIO_PIN_0;
@@ -265,7 +310,11 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-
+/**
+  * @brief Print Depugging result using depugging serial port -> huart3
+  * @param message and values that you want to print
+  * @retval None
+  */
 void print_msg(char* format,...)
 {
 	#ifdef BL_DEBUG_MSG_EN
@@ -279,18 +328,28 @@ void print_msg(char* format,...)
 	#endif
 }
 /************************** Implementation of bootloader command handle functions*************************/
-
+/**
+  * @brief send bootloader message using bootloaer serial port -> huart2
+  * @param message and length 
+  * @retval None
+  */
 void BootLoader_UART_Write_Data(uint8_t *pbuffer, uint32_t length)
 {
 	HAL_UART_Transmit(C_UART,pbuffer,length,HAL_MAX_DELAY);
 }
 
+/**
+  * @brief This function is called to handle the getversion command
+  * @param message received on bootloader serial port
+  * @retval None
+  */
 void BL_handle_getVersion_cmd(uint8_t* pbuffer)
 {
 	uint8_t BL_VER;
 	uint8_t command_packet_length = pbuffer[0] + 1; // the command packet length size itself is 1 byte
 	uint32_t host_crc = *((uint32_t * )(pbuffer + command_packet_length -4));
 	print_msg("BL_DEBUG_MSG : BL_handle_getVersion_cmd running...\n");
+	
 	//verifying checksum
 	if(!bootloader_verify_CRC(&pbuffer[0],command_packet_length - 4,host_crc)) 
 	{	
@@ -310,7 +369,11 @@ void BL_handle_getVersion_cmd(uint8_t* pbuffer)
 		}
 }
 
-
+/**
+  * @brief This function is called to handle the gethelp command
+  * @param message received on bootloader serial port
+  * @retval None
+  */
 void BL_handle_getHelp_cmd(uint8_t* pbuffer)
 {
 	uint32_t command_packet_length = pbuffer[0] + 0x01;
@@ -331,7 +394,11 @@ void BL_handle_getHelp_cmd(uint8_t* pbuffer)
 		}
 }
 
-
+/**
+  * @brief This function is called to handle the getID command
+  * @param message received on bootloader serial port
+  * @retval None
+  */
 void BL_handle_getCID_cmd(uint8_t* pbuffer)
 {
 	uint32_t command_packet_length = pbuffer[0] + 0x01;
@@ -427,7 +494,11 @@ void go_to_bootloader()
 		}}
 		
 }
-
+/**
+  * @brief this function call the user app code from page 7 of flash
+  * @param None
+  * @retval None
+  */
 void go_to_user_app()
 {
 	void ( * user_app_code ) (void);//to hold the address of the reset handler of the user app
@@ -446,9 +517,12 @@ void go_to_user_app()
 	}
 }
 
+/**
+  * @brief  this function sends ACK if the CRC matches with the lenght to follow
+  * @param message received on bootloader serial port
+  * @retval None
+  */
 
-
-/* this function sends ACK if the CRC matches with the lenght to follow*/
 void bootloader_send_ack(uint8_t command_code,uint8_t follow_length)
 {
 	uint8_t ack_buf[2] ;
@@ -457,14 +531,22 @@ void bootloader_send_ack(uint8_t command_code,uint8_t follow_length)
 	ack_buf[1] =  follow_length;
 	HAL_UART_Transmit(C_UART,ack_buf,2,HAL_MAX_DELAY);
 }
-
+/**
+  * @brief this function sends NACK if the CRC matches with the lenght to follow
+  * @param None
+  * @retval None
+  */
 void bootloader_send_nack(void)
 {
 	uint8_t nack = BL_NACK;
 	HAL_UART_Transmit(C_UART,&nack,1,HAL_MAX_DELAY);
 }
 //verifies the CRC of the given buffer in pData
-//checks the CRC of the pData over the length and compares it w ith the CRC_host
+/**
+  * @brief checks the CRC of the pData over the length and compares it w ith the CRC_host
+  * @param Data, length and CRC_host
+  * @retval Success or failed
+  */
 uint8_t bootloader_verify_CRC(uint8_t * pData,uint32_t length,uint32_t CRC_host)
 {
 	uint32_t CRC_value = 0xff;
@@ -483,7 +565,11 @@ uint8_t bootloader_verify_CRC(uint8_t * pData,uint32_t length,uint32_t CRC_host)
 		return VERIFY_CRC_FAILURE;
 	}
 }
-
+/**
+  * @brief Return the Bootloader version
+  * @param None
+  * @retval Bootloader version
+  */
 uint8_t get_bootloader_version(void)
 {
 	return BL_Version;
