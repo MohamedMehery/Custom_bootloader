@@ -348,6 +348,7 @@ void BL_handle_getVersion_cmd(uint8_t* pbuffer)
 	uint8_t BL_VER;
 	uint8_t command_packet_length = pbuffer[0] + 1; // the command packet length size itself is 1 byte
 	uint32_t host_crc = *((uint32_t * )(pbuffer + command_packet_length -4));
+	
 	print_msg("BL_DEBUG_MSG : BL_handle_getVersion_cmd running...\n");
 	
 	//verifying checksum

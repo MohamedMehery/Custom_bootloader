@@ -175,6 +175,43 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
+uint8_t Check_floater_state()
+{
+	uint8_t Red_wire_state , Black_wire_state ;
+	Red_wire_state = HAL_GPIO_ReadPin(GPIOA , GPIO_PIN_0);	/* Read red wire */
+	Black_wire_state = HAL_GPIO_ReadPin(GPIOC , GPIO_PIN_13);	/* Read Black wire */
+	/* Make some descision */
+	if( Red_wire_state )return 1;
+	if( Black_wire_state ) return 0;
+	
+	else 
+		return -1 ;
+}
+
+void CD4017_Interface()
+{
+	int FLoater_num ;	/* start from floater number 1 */
+	HAL_GPIO_WritePin(GPIOA , GPIO_PIN_2 , GPIO_PIN_RESET);	/* RESET counter */
+
+	while(1)
+	{
+		HAL_GPIO_WritePin(GPIOA , GPIO_PIN_2 , GPIO_PIN_SET);	/* toggle RESET counter */
+		
+		for( FLoater_num = 1 ; FLoater_num <= 3 ; FLoater_num++)
+		{	
+			/* call some function before we go to next floater */
+			
+			HAL_GPIO_WritePin(GPIOA , GPIO_PIN_1 , GPIO_PIN_SET);		/* toggle the clock pin */ 
+			HAL_Delay(100);														/* Some delay */
+			
+			HAL_GPIO_WritePin(GPIOA , GPIO_PIN_1 , GPIO_PIN_RESET);		/* toggle the clock pin */ 
+			HAL_Delay(100);														/* Some delay */
+					
+		}
+		HAL_GPIO_WritePin(GPIOA , GPIO_PIN_2 , GPIO_PIN_RESET);	/* RESET counter */
+	}
+	
+}
 /* USER CODE END 4 */
 
 /**
