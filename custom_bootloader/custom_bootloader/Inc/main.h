@@ -84,6 +84,7 @@ void bootloader_send_ack(uint8_t command_code,uint8_t follow_length);
 void bootloader_send_nack(void);
 uint8_t bootloader_verify_CRC(uint8_t*pData,uint32_t length,uint32_t CRC_host);
 uint8_t get_bootloader_version(void);
+uint8_t get_Read_protection(void);
 
 /* USER CODE END EFP */
 

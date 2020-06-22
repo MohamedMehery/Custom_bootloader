@@ -360,8 +360,8 @@ void BL_handle_getVersion_cmd(uint8_t* pbuffer)
 		BL_VER = get_bootloader_version();
 		print_msg("BL_DEBUG_MSG : BootLoader Version : %d %x \n ",BL_VER,BL_VER);
 		//sending reply to the host
-		HAL_UART_Transmit(C_UART,&BL_VER,1,HAL_MAX_DELAY); //Recheck
-		
+		BootLoader_UART_Write_Data((uint8_t*)&BL_VER,sizeof(supported_commands));
+
 	}
 	else
 		{
@@ -421,10 +421,32 @@ void BL_handle_getCID_cmd(uint8_t* pbuffer)
 			bootloader_send_nack();
 		}
 }
-//void BL_handle_getRDP_cmd(uint8_t* pbuffer)
-//{
-//	
-//}
+/**
+  * @brief This function is called to handle the "Get protection level" command
+  * @param message received on bootloader serial port
+  * @retval None
+  */
+void BL_handle_getRDP_cmd(uint8_t* pbuffer)
+{
+	uint8_t RDP_status ;
+	uint32_t Command_packet_length = pbuffer[0]  + 0x01;
+	uint32_t host_crc = *(uint32_t *) (pbuffer + Command_packet_length - 4 );
+	print_msg("BL_DEBUG_MSG : BL_handle_getRDP_cmd running...\n");
+	RDP_status = get_Read_protection();
+	if( ! bootloader_verify_CRC(pbuffer , Command_packet_length - 4 , host_crc ))
+	{
+		print_msg("BL_DEBUG_MSG : CheckSum correct...\n");
+		//checksum is correct
+		bootloader_send_ack( pbuffer[0] , 1 );//2nd argument is the length to follow and it's decided by the func itself
+		//send ACK
+		BootLoader_UART_Write_Data((uint8_t * ) &RDP_status , sizeof(RDP_status ));
+	}
+	else
+	{
+			print_msg("BL_DEBUG_MSG : CheckSum failed, sending NACK...\n");
+			bootloader_send_nack();
+	}
+}
 //void BL_handle_goAddress_cmd(uint8_t* pbuffer)
 //{
 //	
@@ -574,6 +596,16 @@ uint8_t bootloader_verify_CRC(uint8_t * pData,uint32_t length,uint32_t CRC_host)
 uint8_t get_bootloader_version(void)
 {
 	return BL_Version;
+}
+
+/**
+  * @brief Return the Read protectio of flash memory
+  * @param None
+  * @retval the value of read protection from the FLASH_OBP (Option byte register) register
+  */
+uint8_t get_Read_protection(void)
+{
+	return (uint8_t) ((FLASH ->OBR & FLASH_OBR_RDPRT_Msk) >> 1);
 }
 
 /* USER CODE END 4 */
