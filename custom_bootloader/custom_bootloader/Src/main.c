@@ -34,7 +34,7 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 
-#define FLASH_PAGE7_BASE_ADDRESS 0x08001C00U
+#define FLASH_PAGE7_BASE_ADDRESS 0x08001C00U		/*Interview question*/
 
 /* USER CODE END PD */
 
@@ -46,6 +46,7 @@
 
 #define BL_RX_LEN 200
 uint8_t BL_RX_BUFFER[BL_RX_LEN]; //to store all the command bytes sent by the bootloader
+
 
 /* USER CODE END PM */
 
@@ -90,6 +91,7 @@ static void MX_USART3_UART_Init(void);
 void go_to_bootloader();
 void go_to_user_app();
 
+														
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -447,12 +449,52 @@ void BL_handle_getRDP_cmd(uint8_t* pbuffer)
 			bootloader_send_nack();
 	}
 }
-//void BL_handle_goAddress_cmd(uint8_t* pbuffer)
-//{
-//	
-//}
+
+
+/**
+  * @brief BL_handle_goAddress_cmd
+  * @param message buffer
+  * @retval None
+  */
+
+void BL_handle_goAddress_cmd(uint8_t* pbuffer)
+{
+	uint8_t address_valid = ADDRESS_VALID;
+	uint32_t gotoaddress = *(uint32_t*)&pbuffer[2];
+	
+	uint32_t Command_packet_length = pbuffer[0]  + 0x01;
+	uint32_t host_crc = *(uint32_t *) (pbuffer + Command_packet_length - 4 );
+	print_msg("BL_DEBUG_MSG : BL_handle_goAddress_cmd %#x\n",gotoaddress);
+
+	if( ! bootloader_verify_CRC(pbuffer , Command_packet_length - 4 , host_crc ))
+	{
+		if(verify_address(gotoaddress) == ADDRESS_VALID)
+		{
+			 // tell the host that address is fine 
+			BootLoader_UART_Write_Data(&address_valid , 1);
+			//jump to go_address, host must ensure that code is there
+			gotoaddress += 1;	//make T bit = 1;
+			void (*letsjumb)(void) = (void *) gotoaddress;
+			print_msg("BL_DEBUG_MSG : Jumb to address correct...\n");
+			//checksum is correct
+			bootloader_send_ack( pbuffer[0] , 1 );//2nd argument is the length to follow and it's decided by the func itself
+			//send ACK
+		} 
+		else
+		{
+			address_valid = 0;
+			BootLoader_UART_Write_Data(&address_valid , 1);			
+			print_msg("BL_DEBUG_MSG : Ivalid address...\n");
+		}
+	}
+	else
+	{
+			print_msg("BL_DEBUG_MSG : CheckSum failed, sending NACK...\n");
+			bootloader_send_nack();
+	}
+}
 //void BL_handle_flashErase_cmd(uint8_t* pbuffer)
-//{
+//{	// in flash if you want to write something you should erase it first
 //	
 //}
 //void BL_handle_memWrite_cmd(uint8_t* pbuffer)
@@ -494,9 +536,9 @@ void go_to_bootloader()
 			case BL_GET_CID:
 				BL_handle_getCID_cmd(BL_RX_BUFFER);
 				break;
-//			case BL_GET_RDP_STATUS:
-//				BL_handle_getRDP_cmd(BL_RX_BUFFER);
-//				break;
+			case BL_GET_RDP_STATUS:
+				BL_handle_getRDP_cmd(BL_RX_BUFFER);
+				break;
 //			case BL_GO_TO_ADDR:
 //				BL_handle_goAddress_cmd(BL_RX_BUFFER);
 //				break;
@@ -533,11 +575,49 @@ void go_to_user_app()
 	uint32_t reset_handler_value = *(volatile uint32_t * ) (FLASH_PAGE7_BASE_ADDRESS + 4);
 	user_app_code = (void *) (reset_handler_value) ;
 
-
 	while(1)
 	{
 		user_app_code(); /* call user app */ ;
 	}
+}
+///////////////////////////////////////////////////////////////////////////////////////////////
+// project services
+/**
+  * @brief verify the address input 
+  * @param memory address to be executed
+  * @retval true if valid, false if not valid
+  */
+uint8_t verify_address(uint32_t address)
+{
+	//	the valid memory addresses are: //
+	//	system memory	-> yes	
+	//	sram1	-> yes
+	//	sram2	-> yes
+	//	backup sram	-> yes
+	//	peripheral memory -> no
+	//	external memory	-> yes
+	if(address >= SRAM_BASE && address <= (SRAM_BASE + (96 * 1024)) )
+	{
+		// address between SRAM start and SRAM end according to CM3 memory map
+		return ADDRESS_VALID;
+	}
+	else if (address >= FLASH_BASE && address <=  0x08007FFF)
+	{
+		return ADDRESS_VALID;
+	}
+	else
+		return 0;
+	
+}
+
+/**
+  * @brief Return the Read protectio of flash memory
+  * @param None
+  * @retval the value of read protection from the FLASH_OBP (Option byte register) register
+  */
+uint8_t get_Read_protection(void)
+{
+	return (uint8_t) ((FLASH ->OBR & FLASH_OBR_RDPRT_Msk) >> 1);
 }
 
 /**
@@ -598,15 +678,7 @@ uint8_t get_bootloader_version(void)
 	return BL_Version;
 }
 
-/**
-  * @brief Return the Read protectio of flash memory
-  * @param None
-  * @retval the value of read protection from the FLASH_OBP (Option byte register) register
-  */
-uint8_t get_Read_protection(void)
-{
-	return (uint8_t) ((FLASH ->OBR & FLASH_OBR_RDPRT_Msk) >> 1);
-}
+
 
 /* USER CODE END 4 */
 

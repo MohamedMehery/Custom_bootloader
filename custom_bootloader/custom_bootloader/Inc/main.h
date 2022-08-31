@@ -70,6 +70,7 @@ extern "C" {
 #define VERIFY_CRC_SUCCESS	 0u
 #define VERIFY_CRC_FAILURE	 1u
 #define BL_Version 0x50
+#define ADDRESS_VALID 1
 
 
 /* USER CODE END EM */
@@ -85,6 +86,7 @@ void bootloader_send_nack(void);
 uint8_t bootloader_verify_CRC(uint8_t*pData,uint32_t length,uint32_t CRC_host);
 uint8_t get_bootloader_version(void);
 uint8_t get_Read_protection(void);
+uint8_t verify_address(uint32_t address);
 
 /* USER CODE END EFP */
 
