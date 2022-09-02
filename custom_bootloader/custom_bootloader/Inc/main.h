@@ -87,6 +87,7 @@ uint8_t bootloader_verify_CRC(uint8_t*pData,uint32_t length,uint32_t CRC_host);
 uint8_t get_bootloader_version(void);
 uint8_t get_Read_protection(void);
 uint8_t verify_address(uint32_t address);
+uint8_t execute_memory_write(uint8_t * pbuffer , uint32_t mem_address , uint32_t numberofbytes);
 
 /* USER CODE END EFP */
 

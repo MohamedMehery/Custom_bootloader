@@ -317,7 +317,7 @@ static void MX_GPIO_Init(void)
   * @param message and values that you want to print
   * @retval None
   */
-void print_msg(char* format,...)
+void send_msg(char* format,...)
 {
 	#ifdef BL_DEBUG_MSG_EN
 	char str[80];
@@ -351,23 +351,23 @@ void BL_handle_getVersion_cmd(uint8_t* pbuffer)
 	uint8_t command_packet_length = pbuffer[0] + 1; // the command packet length size itself is 1 byte
 	uint32_t host_crc = *((uint32_t * )(pbuffer + command_packet_length -4));
 	
-	print_msg("BL_DEBUG_MSG : BL_handle_getVersion_cmd running...\n");
+	send_msg("BL_DEBUG_MSG : BL_handle_getVersion_cmd running...\n");
 	
 	//verifying checksum
 	if(!bootloader_verify_CRC(&pbuffer[0],command_packet_length - 4,host_crc)) 
 	{	
-		print_msg("BL_DEBUG_MSG : CheckSum correct...\n");
+		send_msg("BL_DEBUG_MSG : CheckSum correct...\n");
 		//checksum is correct
 		bootloader_send_ack(pbuffer[0],1);//2nd argument is the length to follow and it's decided by the func itself
 		BL_VER = get_bootloader_version();
-		print_msg("BL_DEBUG_MSG : BootLoader Version : %d %x \n ",BL_VER,BL_VER);
+		send_msg("BL_DEBUG_MSG : BootLoader Version : %d %x \n ",BL_VER,BL_VER);
 		//sending reply to the host
 		BootLoader_UART_Write_Data((uint8_t*)&BL_VER,sizeof(supported_commands));
 
 	}
 	else
 		{
-			print_msg("BL_DEBUG_MSG : CheckSum failed, sending NACK...\n");
+			send_msg("BL_DEBUG_MSG : CheckSum failed, sending NACK...\n");
 			bootloader_send_nack();
 		}
 }
@@ -379,12 +379,13 @@ void BL_handle_getVersion_cmd(uint8_t* pbuffer)
   */
 void BL_handle_getHelp_cmd(uint8_t* pbuffer)
 {
-	uint32_t command_packet_length = pbuffer[0] + 0x01;
-	uint32_t host_crc = *( (uint32_t * ) (pbuffer + command_packet_length -4) );
-	print_msg("BL_DEBUG_MSG : BL_handle_getHelp_cmd running...\n");
-	if(! bootloader_verify_CRC(pbuffer,(command_packet_length - 4),host_crc)) 
+	uint32_t command_packet_length = BL_RX_BUFFER[0] + 0x01;
+	uint32_t host_crc = *( (uint32_t * ) (BL_RX_BUFFER + command_packet_length -4) );
+	send_msg("BL_DEBUG_MSG : BL_handle_getHelp_cmd running...\n");
+	
+	if(! bootloader_verify_CRC(BL_RX_BUFFER,(command_packet_length - 4),host_crc)) 
 	{	
-		print_msg("BL_DEBUG_MSG : CheckSum correct...\n");
+		send_msg("BL_DEBUG_MSG : CheckSum correct...\n");
 		//checksum is correct
 		bootloader_send_ack(pbuffer[0],sizeof(supported_commands));//2nd argument is the length to follow and it's decided by the func itself
 		//sending reply to the host
@@ -392,7 +393,7 @@ void BL_handle_getHelp_cmd(uint8_t* pbuffer)
 	}
 	else
 		{
-			print_msg("BL_DEBUG_MSG : CheckSum failed, sending NACK...\n");
+			send_msg("BL_DEBUG_MSG : CheckSum failed, sending NACK...\n");
 			bootloader_send_nack();
 		}
 }
@@ -404,14 +405,14 @@ void BL_handle_getHelp_cmd(uint8_t* pbuffer)
   */
 void BL_handle_getCID_cmd(uint8_t* pbuffer)
 {
-	uint32_t command_packet_length = pbuffer[0] + 0x01;
-	uint32_t host_crc = *( (uint32_t * ) (pbuffer + command_packet_length -4) );
-	print_msg("BL_DEBUG_MSG : BL_handle_getCID_cmd running...\n");
+	uint32_t command_packet_length = BL_RX_BUFFER[0] + 0x01;
+	uint32_t host_crc = *( (uint32_t * ) (BL_RX_BUFFER + command_packet_length -4) );
+	send_msg("BL_DEBUG_MSG : BL_handle_getCID_cmd running...\n");
 	uint16_t chip_id ;
 	chip_id = (uint16_t)(DBGMCU->IDCODE) & 0xFFFF;
-	if(! bootloader_verify_CRC(pbuffer,(command_packet_length - 4),host_crc)) 
+	if(! bootloader_verify_CRC(BL_RX_BUFFER,(command_packet_length - 4),host_crc)) 
 	{	
-		print_msg("BL_DEBUG_MSG : CheckSum correct...\n");
+		send_msg("BL_DEBUG_MSG : CheckSum correct...\n");
 		//checksum is correct
 		bootloader_send_ack(pbuffer[0],2);//2nd argument is the length to follow and it's decided by the func itself
 		//sending reply to the host
@@ -419,7 +420,7 @@ void BL_handle_getCID_cmd(uint8_t* pbuffer)
 	}
 	else
 		{
-			print_msg("BL_DEBUG_MSG : CheckSum failed, sending NACK...\n");
+			send_msg("BL_DEBUG_MSG : CheckSum failed, sending NACK...\n");
 			bootloader_send_nack();
 		}
 }
@@ -431,21 +432,21 @@ void BL_handle_getCID_cmd(uint8_t* pbuffer)
 void BL_handle_getRDP_cmd(uint8_t* pbuffer)
 {
 	uint8_t RDP_status ;
-	uint32_t Command_packet_length = pbuffer[0]  + 0x01;
-	uint32_t host_crc = *(uint32_t *) (pbuffer + Command_packet_length - 4 );
-	print_msg("BL_DEBUG_MSG : BL_handle_getRDP_cmd running...\n");
+	uint32_t Command_packet_length = BL_RX_BUFFER[0]  + 0x01;
+	uint32_t host_crc = *(uint32_t *) (BL_RX_BUFFER + Command_packet_length - 4 );
+	send_msg("BL_DEBUG_MSG : BL_handle_getRDP_cmd running...\n");
 	RDP_status = get_Read_protection();
-	if( ! bootloader_verify_CRC(pbuffer , Command_packet_length - 4 , host_crc ))
+	if( ! bootloader_verify_CRC(BL_RX_BUFFER , Command_packet_length - 4 , host_crc ))
 	{
-		print_msg("BL_DEBUG_MSG : CheckSum correct...\n");
+		send_msg("BL_DEBUG_MSG : CheckSum correct...\n");
 		//checksum is correct
-		bootloader_send_ack( pbuffer[0] , 1 );//2nd argument is the length to follow and it's decided by the func itself
+		bootloader_send_ack( pbuffer[0] , 1 );
 		//send ACK
 		BootLoader_UART_Write_Data((uint8_t * ) &RDP_status , sizeof(RDP_status ));
 	}
 	else
 	{
-			print_msg("BL_DEBUG_MSG : CheckSum failed, sending NACK...\n");
+			send_msg("BL_DEBUG_MSG : CheckSum failed, sending NACK...\n");
 			bootloader_send_nack();
 	}
 }
@@ -462,11 +463,11 @@ void BL_handle_goAddress_cmd(uint8_t* pbuffer)
 	uint8_t address_valid = ADDRESS_VALID;
 	uint32_t gotoaddress = *(uint32_t*)&pbuffer[2];
 	
-	uint32_t Command_packet_length = pbuffer[0]  + 0x01;
-	uint32_t host_crc = *(uint32_t *) (pbuffer + Command_packet_length - 4 );
-	print_msg("BL_DEBUG_MSG : BL_handle_goAddress_cmd %#x\n",gotoaddress);
+	uint32_t Command_packet_length = BL_RX_BUFFER[0]  + 0x01;
+	uint32_t host_crc = *(uint32_t *) (BL_RX_BUFFER + Command_packet_length - 4 );
+	send_msg("BL_DEBUG_MSG : BL_handle_goAddress_cmd %#x\n",gotoaddress);
 
-	if( ! bootloader_verify_CRC(pbuffer , Command_packet_length - 4 , host_crc ))
+	if( ! bootloader_verify_CRC(BL_RX_BUFFER , Command_packet_length - 4 , host_crc ))
 	{
 		if(verify_address(gotoaddress) == ADDRESS_VALID)
 		{
@@ -475,7 +476,7 @@ void BL_handle_goAddress_cmd(uint8_t* pbuffer)
 			//jump to go_address, host must ensure that code is there
 			gotoaddress += 1;	//make T bit = 1;
 			void (*letsjumb)(void) = (void *) gotoaddress;
-			print_msg("BL_DEBUG_MSG : Jumb to address correct...\n");
+			send_msg("BL_DEBUG_MSG : Jumb to address correct...\n");
 			//checksum is correct
 			bootloader_send_ack( pbuffer[0] , 1 );//2nd argument is the length to follow and it's decided by the func itself
 			//send ACK
@@ -484,31 +485,92 @@ void BL_handle_goAddress_cmd(uint8_t* pbuffer)
 		{
 			address_valid = 0;
 			BootLoader_UART_Write_Data(&address_valid , 1);			
-			print_msg("BL_DEBUG_MSG : Ivalid address...\n");
+			send_msg("BL_DEBUG_MSG : Ivalid address...\n");
 		}
 	}
 	else
 	{
-			print_msg("BL_DEBUG_MSG : CheckSum failed, sending NACK...\n");
+			send_msg("BL_DEBUG_MSG : CheckSum failed, sending NACK...\n");
 			bootloader_send_nack();
 	}
 }
-//void BL_handle_flashErase_cmd(uint8_t* pbuffer)
-//{	// in flash if you want to write something you should erase it first
-//	
-//}
-//void BL_handle_memWrite_cmd(uint8_t* pbuffer)
-//{
-//	
-//}
-//void BL_handle_memRead_cmd(uint8_t* pbuffer)
-//{	
-//	
-//}
-//void BL_handle_ReadSectorStatus_cmd(uint8_t* pbuffer)
-//{
-//	
-//}
+void BL_handle_flashErase_cmd(uint8_t* pbuffer)
+{	
+	// In flash if you want to write something you should erase it first
+	HAL_StatusTypeDef error ;
+	uint32_t command_packet_length = BL_RX_BUFFER[0] + 0x01;
+	uint32_t host_crc = *( (uint32_t * ) (BL_RX_BUFFER + command_packet_length -4) );
+	send_msg("BL_DEBUG_MSG : BL_handle_flash_erase_cmd running...\n");
+	
+	if(! bootloader_verify_CRC(BL_RX_BUFFER,(command_packet_length - 4),host_crc)) 
+	{	
+		send_msg("BL_DEBUG_MSG : CheckSum correct...\n");
+		//checksum is correct
+		bootloader_send_ack(pbuffer[0],1);
+		//sending reply to the host
+		uint32_t error_code ;
+		FLASH_EraseInitTypeDef flash_erase_struct;
+		flash_erase_struct.TypeErase = FLASH_TYPEERASE_PAGES;
+		flash_erase_struct.PageAddress = FLASH_PAGE7_BASE_ADDRESS;	//erase app code
+		flash_erase_struct.NbPages = (32 - 8);	//all remaining flash pages
+		flash_erase_struct.Banks = FLASH_BANK_1;	//bank is applied when mass erase
+		
+		send_msg("BL_DEBUG_MSG : initial_Page: %d of %d pages...\n" , pbuffer[2] , pbuffer[3]);
+		error = HAL_FLASHEx_Erase(&flash_erase_struct , &error_code);
+		send_msg("BL_DEBUG_MSG: flash erase status: %#X\n",error);
+		BootLoader_UART_Write_Data((uint8_t*)&error , 1);
+	}
+	else
+		{
+			send_msg("BL_DEBUG_MSG : CheckSum failed, sending NACK...\n");
+			bootloader_send_nack();
+		}
+}
+void BL_handle_memWrite_cmd(uint8_t* pbuffer)
+{
+	uint8_t address_valid = ADDRESS_VALID;
+	uint8_t write_status = 0x00;
+	uint8_t checksum = 0 , len = 0;
+	len = pbuffer[0];
+	uint8_t payload_len = pbuffer[6];
+	uint32_t mem_address = *( (uint32_t *) ( &pbuffer[2]));
+	checksum = pbuffer[len];	//recall len = length(pbuffer) - 1, as length byte not counted
+	send_msg("BL_DEBUG_MSG:bootloader_handle_mem_write_cmd\n");
+	
+	//total length of the command packet
+	uint32_t command_packet_len = BL_RX_BUFFER[0]+1;
+	
+	//extract the CRC32 sent by host 
+	uint32_t host_crc = *( (uint32_t*)  (BL_RX_BUFFER + command_packet_len - 4));
+	if (! bootloader_verify_CRC(&BL_RX_BUFFER[0],command_packet_len-4,host_crc))
+		{
+				send_msg("BL_DEBUG_MSG:checksum success !!\n");
+				bootloader_send_ack(pbuffer[0],1);
+				send_msg("BL_DEBUG_MSG: mem write address : %#x\n",mem_address);
+				if(verify_address(mem_address) == ADDRESS_VALID)
+				{
+						send_msg("BL_DEBUG_MSG: valid mem write address\n");
+						write_status = execute_memory_write(&pbuffer[7] , mem_address , payload_len);
+						// inform host about the status
+						BootLoader_UART_Write_Data(&write_status , 1);
+				}
+				else
+				{
+            send_msg("BL_DEBUG_MSG: invalid mem write address\n");
+            write_status = 0;
+            //inform host that address is invalid
+            BootLoader_UART_Write_Data(&write_status,1);					
+				}
+		}
+		else{
+				send_msg("BL_DEBUG_MSG:checksum fail !!\n");
+        bootloader_send_nack();			
+		}
+}
+void BL_handle_memRead_cmd(uint8_t* pbuffer)
+{	
+		send_msg("BL_DEBUG_MSG:HAL library doesnot provide memRead function\n");
+}
 
 void go_to_bootloader()
 {
@@ -539,23 +601,21 @@ void go_to_bootloader()
 			case BL_GET_RDP_STATUS:
 				BL_handle_getRDP_cmd(BL_RX_BUFFER);
 				break;
-//			case BL_GO_TO_ADDR:
-//				BL_handle_goAddress_cmd(BL_RX_BUFFER);
-//				break;
-//			case BL_FLASH_ERASE:
-//				BL_handle_flashErase_cmd(BL_RX_BUFFER);
-//				break;
-//			case BL_MEM_WRITE:
-//				BL_handle_memWrite_cmd(BL_RX_BUFFER);
-//				break;
+			case BL_GO_TO_ADDR:
+				BL_handle_goAddress_cmd(BL_RX_BUFFER);
+				break;
+			case BL_FLASH_ERASE:
+				BL_handle_flashErase_cmd(BL_RX_BUFFER);
+				break;
+			case BL_MEM_WRITE:
+				BL_handle_memWrite_cmd(BL_RX_BUFFER);
+				break;
 //			case BL_MEM_READ:
 //				BL_handle_memRead_cmd(BL_RX_BUFFER);
 //				break;
-//			case BL_READ_SECTOR_STATUS:
-//				BL_handle_ReadSectorStatus_cmd(BL_RX_BUFFER);
-//				break;
+
 			default:
-				print_msg("BL_DEBUG_MSG: INVALID COMMAND CODE RECEIVED FROM THE HOST\r\n");
+				send_msg("BL_DEBUG_MSG: INVALID COMMAND CODE RECEIVED FROM THE HOST\r\n");
 		}}
 		
 }
@@ -582,6 +642,36 @@ void go_to_user_app()
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////
 // project services
+
+
+/**
+  * @brief execute the memory write in half word mode
+  * @param data to be written , address base and data len
+  * @retval write status
+  */
+uint8_t execute_memory_write(uint8_t * pbuffer , uint32_t mem_address , uint32_t numberofbytes)
+	{
+	uint8_t status = HAL_OK;
+	// perform memory erase before write
+	uint32_t error_code ;
+	FLASH_EraseInitTypeDef flash_erase_struct;
+	flash_erase_struct.TypeErase = FLASH_TYPEERASE_PAGES;
+	flash_erase_struct.PageAddress = FLASH_PAGE7_BASE_ADDRESS;	//erase app code
+	flash_erase_struct.NbPages = (32 - 8);	//all remaining flash pages
+	flash_erase_struct.Banks = FLASH_BANK_1;	//bank is applied when mass erase
+	HAL_FLASHEx_Erase(&flash_erase_struct, &error_code);
+	//unlock flash to get control of registers
+	HAL_FLASH_Unlock();
+	for(uint32_t i = 0 ; i < (numberofbytes / 2) + (numberofbytes % 2) ; i++)
+	{
+		//Here we program the flash byte by byte
+		status = HAL_FLASH_Program(FLASH_TYPEPROGRAM_HALFWORD ,  mem_address + i * 2 , (uint16_t) pbuffer[i*2]);
+	}
+	HAL_FLASH_Lock();
+	return status;
+}
+
+
 /**
   * @brief verify the address input 
   * @param memory address to be executed
@@ -596,7 +686,7 @@ uint8_t verify_address(uint32_t address)
 	//	backup sram	-> yes
 	//	peripheral memory -> no
 	//	external memory	-> yes
-	if(address >= SRAM_BASE && address <= (SRAM_BASE + (96 * 1024)) )
+	if(address >= SRAM_BASE && address <= (SRAM_BASE + (96 * 1024)) )	//sizeof of flash is 96kbit
 	{
 		// address between SRAM start and SRAM end according to CM3 memory map
 		return ADDRESS_VALID;
